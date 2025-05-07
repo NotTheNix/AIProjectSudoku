@@ -10,6 +10,9 @@ pygame.init()
 mainClock = pygame.time.Clock()
 from pygame.locals import *
 
+global selected_solver_method
+selected_solver_method = "backtracking"
+
 # Screen resolution (540x590)
 screen_width = 540
 screen_height = 590
@@ -39,7 +42,7 @@ def main_menu():
     # Adjust the button positions and sizes for 540x590 screen
     PLAY_BUTTON = Button(
         image=pygame.image.load("assets/Box Rect.png"),
-        pos=(screen_width // 2, 200),  # Center the button horizontally
+        pos=(screen_width // 2, 200),  # N3ml Center ll button w 
         text_input="PLAY",
         font=get_font(50),
         base_color="#483D8B",
@@ -162,11 +165,11 @@ def game():
             if event.type == MOUSEBUTTONDOWN:
                 if event.button == 1: 
                     if GAME4x4_BUTTON.checkForInput(MENU_MOUSE_POS):
-                        start_sudoku_game4x4()
+                        start_sudoku_game4x4(selected_solver_method)
                     if GAME6x6_BUTTON.checkForInput(MENU_MOUSE_POS):
-                        start_sudoku_game6x6()
+                        start_sudoku_game6x6(selected_solver_method)
                     if GAME9x9_BUTTON.checkForInput(MENU_MOUSE_POS):
-                        start_sudoku_game9x9()
+                        start_sudoku_game9x9(selected_solver_method)
 
         pygame.display.update()
         mainClock.tick(60)
@@ -174,13 +177,38 @@ def game():
 
 
 def options():
+    global selected_solver_method
     screen.blit(BG, (0, 0))
     running = True
     options_font = get_font(30)
 
+    BACKTRACKING_BUTTON = Button(
+        image=pygame.image.load("assets/Box Rect.png"),
+        pos=(screen_width // 2, 250),
+        text_input="Backtrack",
+        font=get_font(40),
+        base_color="#d7fcd4",
+        hovering_color="Blue"
+    )
+
+    GENETIC_BUTTON = Button(
+        image=pygame.image.load("assets/Box Rect.png"),
+        pos=(screen_width // 2, 350),
+        text_input="Genetic",
+        font=get_font(40),
+        base_color="#d7fcd4",
+        hovering_color="Blue"
+    )
+
     while running:
-        screen.fill((0, 0, 0))
+        screen.blit(BG, (0, 0))
         draw_text('Options', options_font, (255, 255, 255), screen, 20, 20)
+
+        MENU_MOUSE_POS = pygame.mouse.get_pos()
+        BACKTRACKING_BUTTON.changeColor(MENU_MOUSE_POS)
+        GENETIC_BUTTON.changeColor(MENU_MOUSE_POS)
+        BACKTRACKING_BUTTON.update(screen)
+        GENETIC_BUTTON.update(screen)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -189,6 +217,14 @@ def options():
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if BACKTRACKING_BUTTON.checkForInput(MENU_MOUSE_POS):
+                        selected_solver_method = "backtracking"
+                        running = False
+                    elif GENETIC_BUTTON.checkForInput(MENU_MOUSE_POS):
+                        selected_solver_method = "genetic"
+                        running = False
 
         pygame.display.update()
         mainClock.tick(60)

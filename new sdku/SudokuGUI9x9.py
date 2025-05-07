@@ -1,37 +1,50 @@
 from sudokutools9x9 import valid, solve, find_empty, generate_board
+from genetic_solver import solve_with_genetic
 from copy import deepcopy
+import copy
 from sys import exit
 import pygame
 import time
 import random
 
+GRID_SIZE = 9
+TILE_SIZE = 60
+WINDOW_SIZE = 540
+BOTTOM_PANEL_HEIGHT = 50
+TOTAL_HEIGHT = WINDOW_SIZE + BOTTOM_PANEL_HEIGHT
+
 class Board:
-    def __init__(self, window):
+    def __init__(self, window, solve_method="backtracking"):
         self.board = generate_board()
-        self.solvedBoard = deepcopy(self.board)
-        solve(self.solvedBoard)
+
+        if solve_method == "genetic":
+            self.solvedBoard = solve_with_genetic(copy.deepcopy(self.board))  # No screen passed = no visualization
+        else:
+            self.solvedBoard = deepcopy(self.board)
+
+            solve(self.solvedBoard)
+    
         self.tiles = [
-            [Tile(self.board[i][j], window, i * 60, j * 60, self.board[i][j] != 0) for j in range(9)]
-            for i in range(9)
+            [Tile(self.board[i][j], window, j * TILE_SIZE, i * TILE_SIZE, self.board[i][j] != 0) for j in range(GRID_SIZE)]
+            for i in range(GRID_SIZE)
         ]
         self.window = window
 
     def draw_board(self):
-        for i in range(9):
-            for j in range(9):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
                 if j % 3 == 0 and j != 0:
-                    pygame.draw.line(self.window, (0, 0, 0), (j // 3 * 180, 0), (j // 3 * 180, 540), 4)
+                    pygame.draw.line(self.window, (0, 0, 0), (j // 3 * 180, 0), (j // 3 * 180, WINDOW_SIZE), 4)
                 if i % 3 == 0 and i != 0:
-                    pygame.draw.line(self.window, (0, 0, 0), (0, i // 3 * 180), (540, i // 3 * 180), 4)
+                    pygame.draw.line(self.window, (0, 0, 0), (0, i // 3 * 180), (WINDOW_SIZE, i // 3 * 180), 4)
 
                 self.tiles[i][j].draw((0, 0, 0), 1)
 
                 if self.tiles[i][j].value != 0:
-                    # If the tile is an original number, display it in red
                     color = (255, 0, 0) if self.tiles[i][j].is_original else (0, 0, 0)
                     self.tiles[i][j].display(
                         self.tiles[i][j].value,
-                        (21 + j * 60, 16 + i * 60),
+                        (21 + j * TILE_SIZE, 16 + i * TILE_SIZE),
                         color
                     )
 
@@ -39,48 +52,48 @@ class Board:
             self.window,
             (0, 0, 0),
             (0, (i + 1) // 3 * 180),
-            (540, (i + 1) // 3 * 180),
+            (WINDOW_SIZE, (i + 1) // 3 * 180),
             4,
         )
 
     def deselect(self, tile):
-        for i in range(9):
-            for j in range(9):
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
                 if self.tiles[i][j] != tile:
                     self.tiles[i][j].selected = False
 
     def redraw(self, keys, wrong, time_passed):
         self.window.fill((255, 255, 255))
         self.draw_board()
-        for i in range(9):
-            for j in range(9):
-                if self.tiles[j][i].selected:
-                    self.tiles[j][i].draw((50, 205, 50), 4)
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.tiles[i][j].selected:
+                    self.tiles[i][j].draw((50, 205, 50), 4)
                 elif self.tiles[i][j].correct:
-                    self.tiles[j][i].draw((34, 139, 34), 4)
+                    self.tiles[i][j].draw((34, 139, 34), 4)
                 elif self.tiles[i][j].incorrect:
-                    self.tiles[j][i].draw((255, 0, 0), 4)
+                    self.tiles[i][j].draw((255, 0, 0), 4)
 
         if len(keys) != 0:
             for value in keys:
                 self.tiles[value[0]][value[1]].display(
                     keys[value],
-                    (21 + value[0] * 60, 16 + value[1] * 60),
+                    (21 + value[0] * TILE_SIZE, 16 + value[1] * TILE_SIZE),
                     (128, 128, 128),
                 )
 
         if wrong > 0:
             font = pygame.font.SysFont("Bauhaus 93", 30)
             text = font.render("X", True, (255, 0, 0))
-            self.window.blit(text, (10, 554))
+            self.window.blit(text, (10, TOTAL_HEIGHT - 36))
 
             font = pygame.font.SysFont("Bahnschrift", 40)
             text = font.render(str(wrong), True, (0, 0, 0))
-            self.window.blit(text, (32, 542))
+            self.window.blit(text, (32, TOTAL_HEIGHT - 48))
 
         font = pygame.font.SysFont("Bahnschrift", 40)
         text = font.render(str(time_passed), True, (0, 0, 0))
-        self.window.blit(text, (388, 542))
+        self.window.blit(text, (WINDOW_SIZE - 152, TOTAL_HEIGHT - 48))
         pygame.display.flip()
 
     def visualSolve(self, wrong, time_passed):
@@ -92,7 +105,7 @@ class Board:
         if not empty:
             return True
 
-        for nums in range(9):
+        for nums in range(GRID_SIZE):
             if valid(self.board, (empty[0], empty[1]), nums + 1):
                 self.board[empty[0]][empty[1]] = nums + 1
                 self.tiles[empty[0]][empty[1]].value = nums + 1
@@ -112,8 +125,8 @@ class Board:
 
     def hint(self, keys):
         while True:
-            i = random.randint(0, 8)
-            j = random.randint(0, 8)
+            i = random.randint(0, GRID_SIZE - 1)
+            j = random.randint(0, GRID_SIZE - 1)
             if self.board[i][j] == 0:
                 if (j, i) in keys:
                     del keys[(j, i)]
@@ -127,11 +140,11 @@ class Tile:
     def __init__(self, value, window, x1, y1, is_original):
         self.value = value
         self.window = window
-        self.rect = pygame.Rect(x1, y1, 60, 60)
+        self.rect = pygame.Rect(x1, y1, TILE_SIZE, TILE_SIZE)
         self.selected = False
         self.correct = False
         self.incorrect = False
-        self.is_original = is_original  # 🆕 Add this to mark original generated numbers
+        self.is_original = is_original
 
     def draw(self, color, thickness):
         pygame.draw.rect(self.window, color, self.rect, thickness)
@@ -146,7 +159,7 @@ class Tile:
             self.selected = True
         return self.selected
 
-def main():
+def main(solver_method="backtracking"):
     pygame.init()
 
     screen = pygame.display.set_mode((540, 590))
@@ -165,7 +178,7 @@ def main():
     pygame.display.flip()
 
     wrong = 0
-    board = Board(screen)
+    board = Board(screen, solve_method=solver_method)
     selected = (-1, -1)
     keyDict = {}
     solved = False
@@ -207,7 +220,7 @@ def main():
                 for i in range(9):
                     for j in range(9):
                         if board.tiles[i][j].clicked(mousePos):
-                            selected = (i, j)
+                            selected = (j, i)
                             board.deselect(board.tiles[i][j])
             elif event.type == pygame.KEYDOWN:
                 if board.board[selected[1]][selected[0]] == 0 and selected != (-1, -1):
@@ -248,23 +261,34 @@ def main():
                     board.hint(keyDict)
 
                 if event.key == pygame.K_SPACE:
-                    for i in range(9):
-                        for j in range(9):
+                    for i in range(len(board.tiles)):
+                        for j in range(len(board.tiles[i])):
                             board.tiles[i][j].selected = False
                     keyDict = {}
-
                     elapsed = time.time() - startTime
                     passedTime = time.strftime("%H:%M:%S", time.gmtime(elapsed))
-                    board.visualSolve(wrong, passedTime)
-                    for i in range(9):
-                        for j in range(9):
+
+                    if solver_method == "genetic":
+                        final = solve_with_genetic(copy.deepcopy(board.board), board.window, delay=50)
+                        board.board[:] = final
+                        board.solvedBoard = deepcopy(final)
+                        for i in range(GRID_SIZE):
+                            for j in range(GRID_SIZE):
+                                board.tiles[i][j].value = board.board[i][j]
+                        board.redraw({}, wrong, passedTime)
+                        pygame.display.flip()
+                    else:
+                        board.visualSolve(wrong, passedTime)
+                        board.solvedBoard = deepcopy(board.board)
+                        
+                    for i in range(len(board.tiles)):
+                        for j in range(len(board.tiles[i])):
                             board.tiles[i][j].correct = False
                             board.tiles[i][j].incorrect = False
                     solved = True
 
                 if event.key == pygame.K_ESCAPE:
                     return
-                
         board.redraw(keyDict, wrong, passedTime)
 
     while True:

@@ -1,5 +1,7 @@
 from sudokutools6x6 import valid, solve, find_empty, generate_board
+from genetic_solver import solve_with_genetic
 from copy import deepcopy
+import copy
 from sys import exit
 import pygame
 import time
@@ -7,19 +9,25 @@ import random
 
 # Global constants
 
+GRID_SIZE = 6
 TILE_SIZE = 90
 WINDOW_SIZE = 540
 BOTTOM_PANEL_HEIGHT = 50
 TOTAL_HEIGHT = WINDOW_SIZE + BOTTOM_PANEL_HEIGHT
 
 class Board:
-    def __init__(self, window):
+    def __init__(self, window, solve_method="backtracking"):
         self.board = generate_board()
-        self.solvedBoard = deepcopy(self.board)
-        solve(self.solvedBoard)
+
+        if solve_method == "genetic":
+            self.solvedBoard = solve_with_genetic(copy.deepcopy(self.board))  # No screen passed = no visualization
+        else:
+            self.solvedBoard = deepcopy(self.board)
+
+            solve(self.solvedBoard)
         self.tiles = [
-            [Tile(self.board[i][j], window, j * TILE_SIZE, i * TILE_SIZE, self.board[i][j] != 0) for j in range(6)]
-            for i in range(6)
+            [Tile(self.board[i][j], window, j * TILE_SIZE, i * TILE_SIZE, self.board[i][j] != 0) for j in range(GRID_SIZE)]
+            for i in range(GRID_SIZE)
         ]
         self.window = window
 
@@ -152,9 +160,8 @@ class Tile:
             self.selected = True
         return self.selected
 
-def main():
+def main(solver_method="backtracking"):
     pygame.init()
-
     screen = pygame.display.set_mode((540, 590))
     screen.fill((255, 255, 255))
     pygame.display.set_caption("6x6 Sudoku Solver")
@@ -165,13 +172,13 @@ def main():
     text = font.render("Generating", True, (0, 0, 0))
     screen.blit(text, (175, 245))
 
-    font = pygame.font.SysFont("Bahschrift", 40)
+    font = pygame.font.SysFont("Bahnschrift", 40)
     text = font.render("Random Grid", True, (0, 0, 0))
     screen.blit(text, (156, 290))
     pygame.display.flip()
 
     wrong = 0
-    board = Board(screen)
+    board = Board(screen, solve_method=solver_method)
     selected = (-1, -1)
     keyDict = {}
     solved = False
@@ -248,16 +255,28 @@ def main():
                     board.hint(keyDict)
 
                 if event.key == pygame.K_SPACE:
-                    for i in range(6):
-                        for j in range(6):
+                    for i in range(len(board.tiles)):
+                        for j in range(len(board.tiles[i])):
                             board.tiles[i][j].selected = False
                     keyDict = {}
-
                     elapsed = time.time() - startTime
                     passedTime = time.strftime("%H:%M:%S", time.gmtime(elapsed))
-                    board.visualSolve(wrong, passedTime)
-                    for i in range(6):
-                        for j in range(6):
+
+                    if solver_method == "genetic":
+                        final = solve_with_genetic(copy.deepcopy(board.board), board.window, delay=50)
+                        board.board[:] = final
+                        board.solvedBoard = deepcopy(final)
+                        for i in range(GRID_SIZE):
+                            for j in range(GRID_SIZE):
+                                board.tiles[i][j].value = board.board[i][j]
+                        board.redraw({}, wrong, passedTime)
+                        pygame.display.flip()
+                    else:
+                        board.visualSolve(wrong, passedTime)
+                        board.solvedBoard = deepcopy(board.board)
+
+                    for i in range(len(board.tiles)):
+                        for j in range(len(board.tiles[i])):
                             board.tiles[i][j].correct = False
                             board.tiles[i][j].incorrect = False
                     solved = True
