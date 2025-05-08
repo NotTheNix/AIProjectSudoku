@@ -180,7 +180,7 @@ def options():
     global selected_solver_method
     screen.blit(BG, (0, 0))
     running = True
-    options_font = get_font(30)
+    options_font = get_font(50)
 
     BACKTRACKING_BUTTON = Button(
         image=pygame.image.load("assets/Box Rect.png"),
