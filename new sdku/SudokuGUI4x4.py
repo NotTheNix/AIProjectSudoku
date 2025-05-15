@@ -145,6 +145,19 @@ class Tile:
 
 def main(solver_method="backtracking"):
     pygame.init()
+
+    click_sound = pygame.mixer.Sound("assets/Ingame_clicks.mp3")
+    click_sound.set_volume(0.05)
+
+    wrong_sound = pygame.mixer.Sound("assets/Wrong_Answer.mp3")
+    wrong_sound.set_volume(0.05)
+
+    # Music: Stops any previous music and play Game music
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load("assets/Game_Song.mp3")  # Add this file to your assets
+    pygame.mixer.music.set_volume(0.05)  # Default volume for 4x4 music
+    pygame.mixer.music.play(-1)
+
     screen = pygame.display.set_mode((WINDOW_WIDTH, TOTAL_HEIGHT))
     pygame.display.set_caption("4x4 Sudoku Solver")
     screen.fill((255, 255, 255))
@@ -172,6 +185,7 @@ def main(solver_method="backtracking"):
             screen.blit(text, (180, 245))
             pygame.display.flip()
             pygame.time.delay(2000)
+            pygame.mixer.music.stop()
             return
 
         if board.board == board.solvedBoard and not solved:
@@ -184,6 +198,7 @@ def main(solver_method="backtracking"):
                 pygame.display.flip()
                 pygame.time.delay(2000)
                 you_win_displayed = True
+                pygame.mixer.music.stop()
                 return
 
         for event in pygame.event.get():
@@ -198,6 +213,7 @@ def main(solver_method="backtracking"):
                         if board.tiles[i][j].clicked(pos):
                             selected = (j, i)
                             board.deselect(board.tiles[i][j])
+                            click_sound.play()
             elif event.type == pygame.KEYDOWN:
                 if board.board[selected[1]][selected[0]] == 0 and selected != (-1, -1):
                     if pygame.K_1 <= event.key <= pygame.K_4:
@@ -208,6 +224,7 @@ def main(solver_method="backtracking"):
                         if selected in keyDict:
                             if keyDict[selected] != board.solvedBoard[selected[1]][selected[0]]:
                                 wrong += 1
+                                wrong_sound.play()
                                 board.tiles[selected[1]][selected[0]].value = 0
                                 del keyDict[selected]
                             else:
@@ -246,6 +263,7 @@ def main(solver_method="backtracking"):
                     solved = True
 
                 if event.key == pygame.K_ESCAPE:
+                    pygame.mixer.music.stop()
                     return
 
         board.redraw(keyDict, wrong, passedTime)
@@ -253,4 +271,5 @@ def main(solver_method="backtracking"):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.mixer.music.stop()
                 return

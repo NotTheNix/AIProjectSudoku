@@ -6,6 +6,10 @@ from SudokuGUI6x6 import main as start_sudoku_game6x6  # Import the main() from 
 from SudokuGUI9x9 import main as start_sudoku_game9x9  # Import the main() from SudokuGUI9x9.py
 
 pygame.init()
+pygame.mixer.init()
+
+#Global Volume Level
+volume_level = 0.1
 
 mainClock = pygame.time.Clock()
 from pygame.locals import *
@@ -23,6 +27,20 @@ pygame.display.set_caption('Sudoku Game') # The title
 BG = pygame.image.load("assets/Background.png")
 BG = pygame.transform.scale(BG, (screen_width, screen_height))  # Scaling the background image to match the new screen size
 
+# Load click sound
+click_sound = pygame.mixer.Sound("assets/click.wav")
+click_sound.set_volume(0.5)
+
+# Music & Sound Effects
+def play_main_theme():
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load("assets/Main_Theme_Song.mp3")
+    pygame.mixer.music.set_volume(volume_level)
+    pygame.mixer.music.play(-1)
+
+
+
+
 def get_font(size):
     return pygame.font.Font("assets/font.ttf", size)
 
@@ -36,7 +54,7 @@ click = False
 
 def main_menu():
     global click
-
+    play_main_theme()
     menu_font = get_font(50)
 
     # Adjust the button positions and sizes for 540x590 screen
@@ -84,10 +102,13 @@ def main_menu():
 
         if click:
             if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
+                click_sound.play()
                 game()  # ✅ Call Sudoku GUI's main() when PLAY is pressed
             if OPTIONS_BUTTON.checkForInput(MENU_MOUSE_POS):
+                click_sound.play()
                 options()
             if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):
+                click_sound.play()
                 pygame.quit()
                 sys.exit()          
         
@@ -164,12 +185,16 @@ def game():
 
             if event.type == MOUSEBUTTONDOWN:
                 if event.button == 1: 
+                    click_sound.play()
                     if GAME4x4_BUTTON.checkForInput(MENU_MOUSE_POS):
                         start_sudoku_game4x4(selected_solver_method)
+                        play_main_theme()
                     if GAME6x6_BUTTON.checkForInput(MENU_MOUSE_POS):
                         start_sudoku_game6x6(selected_solver_method)
+                        play_main_theme()
                     if GAME9x9_BUTTON.checkForInput(MENU_MOUSE_POS):
                         start_sudoku_game9x9(selected_solver_method)
+                        play_main_theme()
 
         pygame.display.update()
         mainClock.tick(60)
@@ -177,14 +202,15 @@ def game():
 
 
 def options():
-    global selected_solver_method
+    global selected_solver_method, volume_level
     screen.blit(BG, (0, 0))
     running = True
     options_font = get_font(50)
 
+    # Solver method buttons
     BACKTRACKING_BUTTON = Button(
         image=pygame.image.load("assets/Box Rect.png"),
-        pos=(screen_width // 2, 250),
+        pos=(screen_width // 2, 150),
         text_input="Backtrack",
         font=get_font(40),
         base_color="#d7fcd4",
@@ -193,11 +219,30 @@ def options():
 
     GENETIC_BUTTON = Button(
         image=pygame.image.load("assets/Box Rect.png"),
-        pos=(screen_width // 2, 350),
+        pos=(screen_width // 2, 250),
         text_input="Genetic",
         font=get_font(40),
         base_color="#d7fcd4",
         hovering_color="Blue"
+    )
+
+    # Volume control buttons
+    VOLUME_UP = Button(
+        image=pygame.image.load("assets/Box Rect.png"),
+        pos=(screen_width // 2, 350),
+        text_input="VOL +",
+        font=get_font(35),
+        base_color="White",
+        hovering_color="Green"
+    )
+
+    VOLUME_DOWN = Button(
+        image=pygame.image.load("assets/Box Rect.png"),
+        pos=(screen_width // 2, 450),
+        text_input="VOL -",
+        font=get_font(35),
+        base_color="White",
+        hovering_color="Red"
     )
 
     while running:
@@ -205,10 +250,23 @@ def options():
         draw_text('Options', options_font, (255, 255, 255), screen, 20, 20)
 
         MENU_MOUSE_POS = pygame.mouse.get_pos()
+
+        # Hover effects
         BACKTRACKING_BUTTON.changeColor(MENU_MOUSE_POS)
         GENETIC_BUTTON.changeColor(MENU_MOUSE_POS)
+        VOLUME_UP.changeColor(MENU_MOUSE_POS)
+        VOLUME_DOWN.changeColor(MENU_MOUSE_POS)
+
+        # Draw buttons
         BACKTRACKING_BUTTON.update(screen)
         GENETIC_BUTTON.update(screen)
+        VOLUME_UP.update(screen)
+        VOLUME_DOWN.update(screen)
+
+        # Volume display
+        font = get_font(30)
+        vol_text = font.render(f"Volume: {int(volume_level * 100)}%", True, (255, 255, 255))
+        screen.blit(vol_text, (screen_width // 2 - 90, 550))
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -219,6 +277,9 @@ def options():
                     running = False
             if event.type == MOUSEBUTTONDOWN:
                 if event.button == 1:
+                    click_sound.play()
+
+                    # Solver selection
                     if BACKTRACKING_BUTTON.checkForInput(MENU_MOUSE_POS):
                         selected_solver_method = "backtracking"
                         running = False
@@ -226,7 +287,18 @@ def options():
                         selected_solver_method = "genetic"
                         running = False
 
+                    # Volume control
+                    elif VOLUME_UP.checkForInput(MENU_MOUSE_POS):
+                        volume_level = min(1.0, volume_level + 0.1)
+                        pygame.mixer.music.set_volume(volume_level)
+
+                    elif VOLUME_DOWN.checkForInput(MENU_MOUSE_POS):
+                        volume_level = max(0.0, volume_level - 0.1)
+                        pygame.mixer.music.set_volume(volume_level)
+
+
         pygame.display.update()
         mainClock.tick(60)
 
 main_menu()
+
