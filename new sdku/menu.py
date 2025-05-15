@@ -295,9 +295,7 @@ def options():
                         volume_level = max(0.0, volume_level - 0.1)
                         pygame.mixer.music.set_volume(volume_level)
 
-
         pygame.display.update()
         mainClock.tick(60)
 
 main_menu()
-
