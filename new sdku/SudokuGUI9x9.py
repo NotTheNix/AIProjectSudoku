@@ -7,39 +7,47 @@ import pygame
 import time
 import random
 
+# Constants for GUI layout
 GRID_SIZE = 9
 TILE_SIZE = 60
 WINDOW_SIZE = 540
 BOTTOM_PANEL_HEIGHT = 50
 TOTAL_HEIGHT = WINDOW_SIZE + BOTTOM_PANEL_HEIGHT
 
+# Board class handles game state and rendering
 class Board:
     def __init__(self, window, solve_method="backtracking"):
-        self.board = generate_board()
+        self.board = generate_board() # Generate a random valid board
 
+        # Solve the board either using GA or backtracking
         if solve_method == "genetic":
             self.solvedBoard = solve_with_genetic(copy.deepcopy(self.board))  # No screen passed = no visualization
         else:
             self.solvedBoard = deepcopy(self.board)
 
             solve(self.solvedBoard)
-    
+
+        # Create tile objects for display
         self.tiles = [
             [Tile(self.board[i][j], window, j * TILE_SIZE, i * TILE_SIZE, self.board[i][j] != 0) for j in range(GRID_SIZE)]
             for i in range(GRID_SIZE)
         ]
         self.window = window
 
+    # Draw the grid and numbers
     def draw_board(self):
         for i in range(GRID_SIZE):
             for j in range(GRID_SIZE):
+                # Draw thick lines to separate subgrids
                 if j % 3 == 0 and j != 0:
                     pygame.draw.line(self.window, (0, 0, 0), (j // 3 * 180, 0), (j // 3 * 180, WINDOW_SIZE), 4)
                 if i % 3 == 0 and i != 0:
                     pygame.draw.line(self.window, (0, 0, 0), (0, i // 3 * 180), (WINDOW_SIZE, i // 3 * 180), 4)
 
+                # Draw the tile border
                 self.tiles[i][j].draw((0, 0, 0), 1)
 
+                # Draw the number in the tile
                 if self.tiles[i][j].value != 0:
                     color = (255, 0, 0) if self.tiles[i][j].is_original else (0, 0, 0)
                     self.tiles[i][j].display(
@@ -55,13 +63,14 @@ class Board:
             (WINDOW_SIZE, (i + 1) // 3 * 180),
             4,
         )
-
+    # Deselect all other tiles when one is selected
     def deselect(self, tile):
         for i in range(GRID_SIZE):
             for j in range(GRID_SIZE):
                 if self.tiles[i][j] != tile:
                     self.tiles[i][j].selected = False
 
+    # Redraw the full screen with updated tiles
     def redraw(self, keys, wrong, time_passed):
         self.window.fill((255, 255, 255))
         self.draw_board()
@@ -74,6 +83,7 @@ class Board:
                 elif self.tiles[i][j].incorrect:
                     self.tiles[i][j].draw((255, 0, 0), 4)
 
+        # Draw temporary numbers entered by player
         if len(keys) != 0:
             for value in keys:
                 self.tiles[value[0]][value[1]].display(
@@ -82,6 +92,7 @@ class Board:
                     (128, 128, 128),
                 )
 
+        # Show number of wrong attempts
         if wrong > 0:
             font = pygame.font.SysFont("Bauhaus 93", 30)
             text = font.render("X", True, (255, 0, 0))
@@ -91,11 +102,13 @@ class Board:
             text = font.render(str(wrong), True, (0, 0, 0))
             self.window.blit(text, (32, TOTAL_HEIGHT - 48))
 
+        # Show elapsed time
         font = pygame.font.SysFont("Bahnschrift", 40)
         text = font.render(str(time_passed), True, (0, 0, 0))
         self.window.blit(text, (WINDOW_SIZE - 152, TOTAL_HEIGHT - 48))
         pygame.display.flip()
 
+    # Recursively solve the board with visual delay
     def visualSolve(self, wrong, time_passed):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -123,6 +136,7 @@ class Board:
                 pygame.time.delay(63)
                 self.redraw({}, wrong, time_passed)
 
+    # Fill a random empty tile with correct value as a hint
     def hint(self, keys):
         while True:
             i = random.randint(0, GRID_SIZE - 1)
@@ -136,6 +150,7 @@ class Board:
             elif self.board == self.solvedBoard:
                 return False
 
+# Tile class represents each cell in the board
 class Tile:
     def __init__(self, value, window, x1, y1, is_original):
         self.value = value
@@ -159,9 +174,11 @@ class Tile:
             self.selected = True
         return self.selected
 
+# Main game loop
 def main(solver_method="backtracking"):
     pygame.init()
 
+    # Load sounds
     click_sound = pygame.mixer.Sound("assets/Ingame_clicks.mp3")
     click_sound.set_volume(0.05)
 
@@ -171,18 +188,23 @@ def main(solver_method="backtracking"):
     losing_sound = pygame.mixer.Sound("assets/Losing_Sound.mp3")
     losing_sound.set_volume(0.1)
 
-    # Music: Stops any previous music and play Game music
+    winning_sound = pygame.mixer.Sound("assets/Win_Sound.mp3")
+    winning_sound.set_volume(0.1)
+
+    # Play background music
     pygame.mixer.music.stop()
     pygame.mixer.music.load("assets/Game_Song.mp3")
     pygame.mixer.music.set_volume(0.05)
     pygame.mixer.music.play(-1)
 
+    # Setup game window
     screen = pygame.display.set_mode((540, 590))
     screen.fill((255, 255, 255))
     pygame.display.set_caption("Sudoku Game")
     icon = pygame.image.load("assets/thumbnail.png")
     pygame.display.set_icon(icon)
 
+    # Display loading message
     font = pygame.font.SysFont("Bahnschrift", 40)
     text = font.render("Generating", True, (0, 0, 0))
     screen.blit(text, (175, 245))
@@ -200,32 +222,36 @@ def main(solver_method="backtracking"):
     you_win_displayed = False
     startTime = time.time()
 
+    # Game loop
     while not solved:
         elapsed = time.time() - startTime
         passedTime = time.strftime("%H:%M:%S", time.gmtime(elapsed))
 
+        # Handle losing
         if wrong >= 10:
             pygame.mixer.music.stop()
             losing_sound.play()
-            font = pygame.font.SysFont("Bahnschrift", 60)
-            text = font.render("You Lost", True, (255, 0, 0))
-            screen.fill((255, 255, 255))
-            screen.blit(text, (180, 245))
+            screen.fill((0, 0, 0))
+            lose_img = pygame.image.load("assets/Game_Over.jpg")
+            lose_img = pygame.transform.scale(lose_img, (400, 400))
+            screen.blit(lose_img, (70, 90))
             pygame.display.flip()
             pygame.time.delay(3000)
             return
 
+        # Handle win
         if board.board == board.solvedBoard and not solved:
             solved = True
             if not you_win_displayed:
-                font = pygame.font.SysFont("Bahnschrift", 60)
-                text = font.render("You Won!", True, (34, 139, 34))
-                screen.fill((255, 255, 255))
-                screen.blit(text, (180, 245))
+                pygame.mixer.music.stop()
+                winning_sound.play()
+                screen.fill((0, 0, 0))
+                win_img = pygame.image.load("assets/you_won_BG.png")
+                win_img = pygame.transform.scale(win_img, (300, 300))
+                screen.blit(win_img, (120, 120))
                 pygame.display.flip()
                 pygame.time.delay(2000)
                 you_win_displayed = True
-                pygame.mixer.music.stop()
                 return  # End the game after showing the message
 
         for event in pygame.event.get():
@@ -300,7 +326,8 @@ def main(solver_method="backtracking"):
                     else:
                         board.visualSolve(wrong, passedTime)
                         board.solvedBoard = deepcopy(board.board)
-                        
+                    
+                    # Reset flags after auto-solve
                     for i in range(len(board.tiles)):
                         for j in range(len(board.tiles[i])):
                             board.tiles[i][j].correct = False
@@ -312,6 +339,7 @@ def main(solver_method="backtracking"):
                     return
         board.redraw(keyDict, wrong, passedTime)
 
+    # Keep the window open after winning/losing
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
