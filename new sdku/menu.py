@@ -22,6 +22,8 @@ screen_width = 540
 screen_height = 590
 screen = pygame.display.set_mode((screen_width, screen_height), 0, 32)
 pygame.display.set_caption('Sudoku Game') # The title
+icon = pygame.image.load("assets/thumbnail.png")
+pygame.display.set_icon(icon)
 
 # Load the background image and scale it to fit 540x590 resolution
 BG = pygame.image.load("assets/Background.png")
@@ -37,9 +39,6 @@ def play_main_theme():
     pygame.mixer.music.load("assets/Main_Theme_Song.mp3")
     pygame.mixer.music.set_volume(volume_level)
     pygame.mixer.music.play(-1)
-
-
-
 
 def get_font(size):
     return pygame.font.Font("assets/font.ttf", size)

@@ -152,6 +152,9 @@ def main(solver_method="backtracking"):
     wrong_sound = pygame.mixer.Sound("assets/Wrong_Answer.mp3")
     wrong_sound.set_volume(0.05)
 
+    losing_sound = pygame.mixer.Sound("assets/Losing_Sound.mp3")
+    losing_sound.set_volume(0.1)
+
     # Music: Stops any previous music and play Game music
     pygame.mixer.music.stop()
     pygame.mixer.music.load("assets/Game_Song.mp3")  # Add this file to your assets
@@ -159,8 +162,11 @@ def main(solver_method="backtracking"):
     pygame.mixer.music.play(-1)
 
     screen = pygame.display.set_mode((WINDOW_WIDTH, TOTAL_HEIGHT))
-    pygame.display.set_caption("4x4 Sudoku Solver")
     screen.fill((255, 255, 255))
+    pygame.display.set_caption("Sudoku Game")
+    icon = pygame.image.load("assets/thumbnail.png")
+    pygame.display.set_icon(icon)
+    
 
     font = pygame.font.SysFont("Bahnschrift", 40)
     screen.blit(font.render("Generating Random Grid", True, (0, 0, 0)), (100, 240))
@@ -179,13 +185,14 @@ def main(solver_method="backtracking"):
         passedTime = time.strftime("%H:%M:%S", time.gmtime(elapsed))
 
         if wrong >= 5:
+            pygame.mixer.music.stop()
+            losing_sound.play()
             font = pygame.font.SysFont("Bahnschrift", 60)
             text = font.render("You Lost", True, (255, 0, 0))
             screen.fill((255, 255, 255))
             screen.blit(text, (180, 245))
             pygame.display.flip()
-            pygame.time.delay(2000)
-            pygame.mixer.music.stop()
+            pygame.time.delay(3000)
             return
 
         if board.board == board.solvedBoard and not solved:

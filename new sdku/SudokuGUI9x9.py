@@ -162,9 +162,24 @@ class Tile:
 def main(solver_method="backtracking"):
     pygame.init()
 
+    click_sound = pygame.mixer.Sound("assets/Ingame_clicks.mp3")
+    click_sound.set_volume(0.05)
+
+    wrong_sound = pygame.mixer.Sound("assets/Wrong_Answer.mp3")
+    wrong_sound.set_volume(0.05)
+
+    losing_sound = pygame.mixer.Sound("assets/Losing_Sound.mp3")
+    losing_sound.set_volume(0.1)
+
+    # Music: Stops any previous music and play Game music
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load("assets/Game_Song.mp3")
+    pygame.mixer.music.set_volume(0.05)
+    pygame.mixer.music.play(-1)
+
     screen = pygame.display.set_mode((540, 590))
     screen.fill((255, 255, 255))
-    pygame.display.set_caption("Sudoku Solver")
+    pygame.display.set_caption("Sudoku Game")
     icon = pygame.image.load("assets/thumbnail.png")
     pygame.display.set_icon(icon)
 
@@ -190,13 +205,15 @@ def main(solver_method="backtracking"):
         passedTime = time.strftime("%H:%M:%S", time.gmtime(elapsed))
 
         if wrong >= 10:
+            pygame.mixer.music.stop()
+            losing_sound.play()
             font = pygame.font.SysFont("Bahnschrift", 60)
             text = font.render("You Lost", True, (255, 0, 0))
-            screen.fill((255, 255, 255))  # Clear the screen
+            screen.fill((255, 255, 255))
             screen.blit(text, (180, 245))
             pygame.display.flip()
-            pygame.time.delay(2000)  # Display "You Lost" for 2 seconds
-            return  # End the game
+            pygame.time.delay(3000)
+            return
 
         if board.board == board.solvedBoard and not solved:
             solved = True
@@ -208,6 +225,7 @@ def main(solver_method="backtracking"):
                 pygame.display.flip()
                 pygame.time.delay(2000)
                 you_win_displayed = True
+                pygame.mixer.music.stop()
                 return  # End the game after showing the message
 
         for event in pygame.event.get():
@@ -222,6 +240,7 @@ def main(solver_method="backtracking"):
                         if board.tiles[i][j].clicked(mousePos):
                             selected = (j, i)
                             board.deselect(board.tiles[i][j])
+                            click_sound.play()
             elif event.type == pygame.KEYDOWN:
                 if board.board[selected[1]][selected[0]] == 0 and selected != (-1, -1):
                     if event.key == pygame.K_1:
@@ -250,6 +269,7 @@ def main(solver_method="backtracking"):
                         if selected in keyDict:
                             if keyDict[selected] != board.solvedBoard[selected[1]][selected[0]]:
                                 wrong += 1
+                                wrong_sound.play()
                                 board.tiles[selected[1]][selected[0]].value = 0
                                 del keyDict[selected]
                             else:
@@ -288,10 +308,12 @@ def main(solver_method="backtracking"):
                     solved = True
 
                 if event.key == pygame.K_ESCAPE:
+                    pygame.mixer.music.stop()
                     return
         board.redraw(keyDict, wrong, passedTime)
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.mixer.music.stop()
                 return
